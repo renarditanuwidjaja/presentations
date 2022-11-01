@@ -1,0 +1,162 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <title>
+      Weather visualization | Sample | ArcGIS API for JavaScript 4.24
+    </title>
+    <style>
+      html,
+      body,
+      #viewDiv {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+
+      #selection {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        display: flex;
+        justify-content: center;
+      }
+
+      calcite-button {
+        width: 40%;
+        max-width: 300px;
+        margin-left: 5px;
+      }
+    </style>
+
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/4.24/esri/themes/light/main.css"
+    />
+    <script src="https://js.arcgis.com/4.24/"></script>
+
+    <script>
+      require([
+        "esri/WebScene",
+        "esri/views/SceneView",
+        "esri/widgets/Expand",
+        "esri/widgets/Weather",
+        "esri/widgets/Daylight"
+      ], (WebScene, SceneView, Expand, Weather, Daylight) => {
+        /***********************************
+         * Create the SceneView
+         ***********************************/
+        // Load a webscene
+        const scene = new WebScene({
+          portalItem: {
+            id: "c56dab9e4d1a4b0c9d1ee7f589343516"
+          }
+        });
+
+        // Create a new SceneView and set the weather to cloudy
+        const view = new SceneView({
+          map: scene,
+          container: "viewDiv",
+          qualityProfile: "high",
+
+          environment: {
+            weather: {
+              type: "cloudy", // autocasts as new CloudyWeather({ cloudCover: 0.3 })
+              cloudCover: 0.3
+            },
+            atmosphere: {
+              quality: "high"
+            },
+            lighting: {
+              waterReflectionEnabled: true,
+              ambientOcclusionEnabled: true
+            }
+          }
+        });
+
+        /***********************************
+         * Add the widgets' UI elements to the view
+         ***********************************/
+        const weatherExpand = new Expand({
+          view: view,
+          content: new Weather({
+            view: view
+          }),
+          group: "top-right",
+          expanded: true
+        });
+
+        const daylightExpand = new Expand({
+          view: view,
+          content: new Daylight({
+            view: view
+          }),
+          group: "top-right"
+        });
+        view.ui.add([weatherExpand, daylightExpand], "top-right");
+
+        /***********************************
+         * Add functionality to change between flooding and no flooding
+         ***********************************/
+        // Wait for the view to be loaded, in order to being able to retrieve the layer
+        view.when(() => {
+          // Find the layer for the
+          let floodLevel = scene.allLayers.find(function (layer) {
+            return layer.title === "Flood Level";
+          });
+
+          const buttonFlooding = document.getElementById("flooding");
+          const buttonNoFlooding = document.getElementById("noFlooding");
+
+          buttonFlooding.addEventListener("click", (event) => {
+            // Change the weather to rainy to match the flooding scenario
+            view.environment.weather = {
+              type: "rainy", // autocasts as new RainyWeather({ cloudCover: 0.7, precipitation: 0.3 })
+              cloudCover: 0.7,
+              precipitation: 0.3
+            };
+
+            // Turn on the water layer showing the flooding
+            floodLevel.visible = true;
+
+            // Styling of the buttons
+            buttonNoFlooding.appearance = "outline";
+            buttonFlooding.appearance = "solid";
+          });
+
+          buttonNoFlooding.addEventListener("click", (event) => {
+            // Change the weather back to cloudy
+            view.environment.weather = {
+              type: "cloudy", // autocasts as new CloudyWeather({ cloudCover: 0.3 })
+              cloudCover: 0.3
+            };
+
+            // Turn off the water layer showing the flooding
+            floodLevel.visible = false;
+
+            // Styling of the buttons
+            buttonNoFlooding.appearance = "solid";
+            buttonFlooding.appearance = "outline";
+          });
+        });
+      });
+    </script>
+  </head>
+
+  <body>
+    <div id="viewDiv"></div>
+    <div id="selection">
+      <calcite-button id="noFlooding" appearance="solid"
+        >No flooding</calcite-button
+      >
+      <calcite-button id="flooding" appearance="outline"
+        >Flooding</calcite-button
+      >
+    </div>
+  </body>
+</html>
